@@ -302,17 +302,20 @@
                     const saved = localStorage.getItem('adwrng_icao');
                     if (saved) this.icao = saved;
 
+                    // Tenta iniciar o áudio imediatamente não espera clique
+                    this.initAudio();
+
                     this.updateTime();
                     setInterval(() => this.updateTime(), 1000);
                     this.startCountdown();
                     this.fetchData();
                     setTimeout(() => lucide.createIcons(), 100);
 
-                    // Auto-Unlock Audio context on first click
+                    // Fallback: garante resume no clique caso o autoplay tenha falhado
                     const unlock = () => {
-                        this.initAudio();
-                        document.removeEventListener('click', unlock);
-                        document.removeEventListener('keydown', unlock);
+                        if (this.audioCtx && this.audioCtx.state === 'suspended') {
+                            this.audioCtx.resume();
+                        }
                     };
                     document.addEventListener('click', unlock);
                     document.addEventListener('keydown', unlock);
@@ -449,11 +452,11 @@
                 },
 
                 playBeep(duration = 0.2, freq = 880) {
-                    this.initAudio(); // Garante que existe e tenta acordar
+                    this.initAudio();
 
-                    if (!this.audioCtx || this.audioCtx.state !== 'running') {
-                        console.warn("Audio blocked. User interaction needed.");
-                        return;
+                    // Não bloqueia mais se estiver suspenso - tenta resumir e continua (Fire & Forget)
+                    if (this.audioCtx.state === 'suspended') {
+                        this.audioCtx.resume().catch(() => { });
                     }
 
                     const osc = this.audioCtx.createOscillator();
