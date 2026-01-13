@@ -222,7 +222,8 @@
                         </div>
                         <div class="flex-grow space-y-4">
                             <div class="flex justify-between items-start">
-                                <h3 class="text-2xl font-bold text-white tracking-wide">ALERTA DE AVISO DE AERÓDROMO</h3>
+                                <h3 class="text-2xl font-bold text-white tracking-wide">ALERTA DE AVISO DE AERÓDROMO
+                                </h3>
                                 <div
                                     class="px-3 py-1 bg-red-500 rounded text-xs font-bold text-black uppercase animate-pulse">
                                     Vigente</div>
@@ -367,7 +368,15 @@
 
                 formatDate(dateStr) {
                     if (!dateStr) return '--';
-                    const d = new Date(dateStr);
+                    // Ajuste para garantir que a data seja interpretada como UTC
+                    // A API retorna "YYYY-MM-DD HH:MM:SS" (UTC), mas o new Date() assume Local Time
+                    // Ao formatar para ISO 8601 com 'Z' ("YYYY-MM-DDTHH:MM:SSZ"), forçamos UTC.
+                    let safeDate = dateStr;
+                    if (typeof dateStr === 'string' && !dateStr.includes('Z')) {
+                        safeDate = dateStr.replace(' ', 'T') + 'Z';
+                    }
+
+                    const d = new Date(safeDate);
                     const day = d.getUTCDate().toString().padStart(2, '0');
                     const mon = (d.getUTCMonth() + 1).toString().padStart(2, '0');
                     const ho = d.getUTCHours().toString().padStart(2, '0');
