@@ -272,6 +272,14 @@
                 <h2 class="text-4xl font-black text-white uppercase tracking-tighter">Atenção Piloto</h2>
                 <p class="text-red-200 text-lg">Novo aviso meteorológico detectado para <b x-text="icao"></b>.
                 </p>
+
+                <!-- Aviso de Autoplay Bloqueado -->
+                <div x-show="audioBlocked"
+                    class="bg-yellow-500/20 border border-yellow-500/50 p-3 rounded-xl animate-pulse">
+                    <p class="text-yellow-200 font-bold uppercase text-sm">⚠️ Áudio Bloqueado pelo Navegador</p>
+                    <p class="text-yellow-100/70 text-xs mt-1">Clique na tela para habilitar o som</p>
+                </div>
+
                 <button @click="stopAlarm()"
                     class="w-full py-4 bg-white text-red-900 font-bold text-xl rounded-xl hover:bg-gray-200 uppercase">
                     Reconhecer e Silenciar
@@ -296,6 +304,7 @@
                 lastMsgHash: '',
                 audioEnabled: true, // Mudança 3: Default ON
                 showAlarmOverlay: false,
+                audioBlocked: false,
                 audioCtx: null,
 
                 init() {
@@ -442,52 +451,73 @@
                     if (!this.audioCtx) {
                         const AudioContext = window.AudioContext || window.webkitAudioContext;
                         this.audioCtx = new AudioContext();
+
+                        // Monitor state changes
+                        this.audioCtx.onstatechange = () => {
+                            if (this.audioCtx.state === 'running') {
+                                this.audioBlocked = false;
+                            }
+                        };
                     }
-                    // Tenta acordar o contexto sempre que possível
+
+                    // Tenta acordar agressivamente
                     if (this.audioCtx.state === 'suspended') {
                         this.audioCtx.resume().then(() => {
-                            console.log("AudioContext resumed successfully");
-                        }).catch(e => console.warn("AudioContext resume failed (waiting for interaction)", e));
+                            this.audioBlocked = false;
+                        }).catch(() => {
+                            this.audioBlocked = true;
+                        });
                     }
                 },
 
                 playBeep(duration = 0.2, freq = 880) {
                     this.initAudio();
 
-                    // Não bloqueia mais se estiver suspenso - tenta resumir e continua (Fire & Forget)
+                    // Se ainda estiver suspenso após a tentativa de init, marca como bloqueado
                     if (this.audioCtx.state === 'suspended') {
-                        this.audioCtx.resume().catch(() => { });
+                        this.audioBlocked = true;
+                        // Tenta de novo sem bloquear o fluxo
+                        this.audioCtx.resume().catch(e => console.log("Autoplay blocked:", e));
+                    } else {
+                        this.audioBlocked = false;
                     }
 
-                    const osc = this.audioCtx.createOscillator();
-                    const gain = this.audioCtx.createGain();
+                    // Cria o som mesmo assim (se desbloquear logo em seguida, toca)
+                    try {
+                        const osc = this.audioCtx.createOscillator();
+                        const gain = this.audioCtx.createGain();
 
-                    osc.type = 'square';
-                    osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+                        osc.type = 'square';
+                        osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
 
-                    // Fade in/out para evitar 'pop'
-                    gain.gain.setValueAtTime(0.01, this.audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.2, this.audioCtx.currentTime + 0.05);
-                    gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
+                        gain.gain.setValueAtTime(0.01, this.audioCtx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.2, this.audioCtx.currentTime + 0.05);
+                        gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
 
-                    osc.connect(gain);
-                    gain.connect(this.audioCtx.destination);
+                        osc.connect(gain);
+                        gain.connect(this.audioCtx.destination);
 
-                    osc.start();
-                    osc.stop(this.audioCtx.currentTime + duration);
+                        osc.start();
+                        osc.stop(this.audioCtx.currentTime + duration);
+                    } catch (e) {
+                        console.error("Audio error:", e);
+                    }
                 },
 
                 triggerAlarm() {
                     if (!this.audioEnabled) return;
-                    console.log("TRIGGER ALARM!");
 
                     this.showAlarmOverlay = true;
-
-                    // Tenta resumir mais uma vez caso o user tenha clicado algo recentemente
-                    if (this.audioCtx && this.audioCtx.state === 'suspended') this.audioCtx.resume();
+                    this.initAudio(); // Tenta ativar audio context
 
                     const playLoop = () => {
                         if (!this.showAlarmOverlay) return;
+
+                        // Verifica estado do áudio
+                        if (this.audioCtx && this.audioCtx.state === 'suspended') {
+                            this.audioBlocked = true;
+                            this.audioCtx.resume().catch(() => { });
+                        }
 
                         this.playBeep(0.2, 880); // High pitch
 
@@ -502,6 +532,7 @@
 
                 stopAlarm() {
                     this.showAlarmOverlay = false;
+                    this.audioBlocked = false; // Reset warning
                     if (this.alarmTimeout) clearTimeout(this.alarmTimeout);
                 }
             }))
