@@ -69,6 +69,50 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
+        .glass-panel-soft {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .status-pill {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .success-panel {
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(5, 150, 105, 0.05));
+        }
+
+        .alert-badge {
+            background: linear-gradient(90deg, rgba(239, 68, 68, 0.9), rgba(251, 191, 36, 0.9));
+            color: #120606;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .glow-ring {
+            box-shadow: 0 0 0 1px rgba(0, 242, 255, 0.25), 0 0 25px rgba(0, 242, 255, 0.25);
+        }
+
+        .overlay-glow {
+            animation: pulseGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes pulseGlow {
+            0% {
+                box-shadow: 0 0 20px rgba(239, 68, 68, 0.4), 0 0 40px rgba(239, 68, 68, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 0 30px rgba(239, 68, 68, 0.7), 0 0 80px rgba(239, 68, 68, 0.4);
+            }
+
+            100% {
+                box-shadow: 0 0 20px rgba(239, 68, 68, 0.4), 0 0 40px rgba(239, 68, 68, 0.2);
+            }
+        }
+
         .animate-enter {
             animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
@@ -108,18 +152,20 @@
                         class="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
                         MONITOR AD WRNG
                     </h1>
-                    <div class="flex items-center gap-2 text-sm text-gray-400 mt-1">
-                        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                        <span>Localidade • <span x-text="icao"></span></span>
+                    <div class="flex items-center gap-2 text-sm text-gray-300 mt-2">
+                        <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                        <span class="status-pill px-2 py-0.5 rounded-full">Localidade • <span
+                                x-text="icao"></span></span>
                     </div>
                 </div>
             </div>
 
             <div class="flex flex-col items-end gap-2">
                 <!-- Mudança 2: Fonte Maior -->
-                <div class="text-5xl font-light font-mono tracking-tighter" x-text="currentTime">00:00</div>
+                <div class="glass-panel-soft glow-ring rounded-2xl px-4 py-2 text-5xl font-light font-mono tracking-tighter"
+                    x-text="currentTime">00:00</div>
                 <div
-                    class="text-sm font-bold px-3 py-1 rounded bg-white/5 border border-white/10 uppercase tracking-widest text-gray-400">
+                    class="text-xs font-bold px-3 py-1 rounded bg-white/5 border border-white/10 uppercase tracking-widest text-gray-400">
                     UTC
                 </div>
             </div>
@@ -182,7 +228,11 @@
                     <div class="text-sm font-semibold mt-1"
                         x-text="audioEnabled ? 'Monitorando' : 'Clique para ativar'"></div>
                 </div>
-                <i :data-lucide="audioEnabled ? 'volume-2' : 'volume-x'" class="w-6 h-6"></i>
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full"
+                        :class="audioEnabled ? 'bg-emerald-400' : 'bg-red-400'"></span>
+                    <i :data-lucide="audioEnabled ? 'volume-2' : 'volume-x'" class="w-6 h-6"></i>
+                </div>
             </button>
         </div>
 
@@ -197,12 +247,12 @@
             </div>
 
             <div x-show="!loading && warnings.length === 0"
-                class="glass-panel rounded-2xl p-12 text-center border-dashed border-2 border-white/5 flex flex-col items-center justify-center gap-4 animate-enter">
-                <div class="p-4 bg-white/5 rounded-full">
+                class="success-panel rounded-2xl p-12 text-center border-dashed border-2 border-emerald-500/20 flex flex-col items-center justify-center gap-4 animate-enter">
+                <div class="p-4 bg-emerald-500/10 rounded-full">
                     <i data-lucide="check-circle-2" class="w-12 h-12 text-green-500"></i>
                 </div>
-                <h3 class="text-xl font-semibold text-gray-300">Nenhum Aviso Vigente</h3>
-                <p class="text-gray-500 max-w-sm">O aeródromo de <b class="text-white" x-text="icao"></b> está operando
+                <h3 class="text-xl font-semibold text-gray-200">Nenhum Aviso Vigente</h3>
+                <p class="text-gray-300 max-w-sm">O aeródromo de <b class="text-white" x-text="icao"></b> está operando
                     normalmente sem avisos de aeródromo reportados na API REDEMET.</p>
             </div>
 
@@ -224,8 +274,7 @@
                             <div class="flex justify-between items-start">
                                 <h3 class="text-2xl font-bold text-white tracking-wide">ALERTA DE AVISO DE AERÓDROMO
                                 </h3>
-                                <div
-                                    class="px-3 py-1 bg-red-500 rounded text-xs font-bold text-black uppercase animate-pulse">
+                                <div class="px-3 py-1 rounded text-xs font-bold uppercase animate-pulse alert-badge">
                                     Vigente</div>
                             </div>
                             <div class="grid grid-cols-2 gap-4 bg-black/20 p-3 rounded-lg border border-white/5">
@@ -241,7 +290,7 @@
                                 </div>
                             </div>
                             <div
-                                class="bg-black/40 p-4 rounded-lg border-l-4 border-red-500 font-mono text-sm text-red-100 leading-relaxed">
+                                class="bg-black/40 p-5 rounded-lg border-l-4 border-red-500 font-mono text-sm text-red-100 leading-relaxed">
                                 <span x-text="aviso.mens"></span>
                             </div>
                         </div>
@@ -261,12 +310,13 @@
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4"
         style="display: none;">
         <div
-            class="max-w-lg w-full bg-[#1a0505] border-2 border-red-600 rounded-3xl p-8 text-center shadow-[0_0_100px_rgba(255,0,0,0.4)] relative overflow-hidden">
+            class="max-w-lg w-full bg-[#1a0505] border-2 border-red-500/80 rounded-3xl p-8 text-center shadow-[0_0_100px_rgba(255,0,0,0.4)] relative overflow-hidden overlay-glow">
             <div class="absolute inset-0 opacity-10"
                 style="background: repeating-linear-gradient(45deg, transparent, transparent 10px, #ff0000 10px, #ff0000 20px);">
             </div>
             <div class="relative z-10 flex flex-col items-center gap-6">
-                <div class="w-24 h-24 bg-red-600 rounded-full flex items-center justify-center animate-bounce">
+                <div
+                    class="w-24 h-24 bg-red-600 rounded-full flex items-center justify-center animate-bounce shadow-[0_0_30px_rgba(255,0,0,0.6)]">
                     <i data-lucide="bell-ring" class="w-12 h-12 text-white"></i>
                 </div>
                 <h2 class="text-4xl font-black text-white uppercase tracking-tighter">Atenção Piloto</h2>
